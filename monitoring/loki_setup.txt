@@ -1,0 +1,23 @@
+Grafana Loki Setup
+
+1. Start Loki using Docker:
+
+docker run -d --name loki -p 3100:3100 grafana/loki:latest
+
+
+2. Check if Loki is running:
+
+curl http://localhost:3100/ready
+
+
+3. View container logs:
+
+docker logs <container_name>
+
+
+4. View Nomad allocation logs:
+
+nomad alloc logs <allocation_id>
+
+
+Loki logs can also be queried through its API or visualized using Grafana.l
