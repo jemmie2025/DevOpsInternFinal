@@ -1,5 +1,7 @@
 # DevOps Intern Final Assessment
 
+[![Python CI](https://github.com/jemmie2025/DevOpsInternFinal/actions/workflows/ci.yml/badge.svg)](https://github.com/jemmie2025/DevOpsInternFinal/actions/workflows/ci.yml)
+
 *Name:* Jemimah Godswill  
 *Date:* July 19, 2026  
 
