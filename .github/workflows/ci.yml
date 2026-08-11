@@ -1,4 +1,4 @@
-name: Python CI
+name: DevOps CI
 
 on:
   push:
@@ -13,5 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Python script
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Run hello.py
         run: python hello.py
