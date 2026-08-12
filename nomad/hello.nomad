@@ -1,20 +1,20 @@
 job "hello-devops" {
   datacenters = ["dc1"]
+  type        = "batch"
 
-  type = "service"
-
-  group "hello-group" {
+  group "hello" {
     count = 1
 
     task "hello" {
       driver = "docker"
 
       config {
-        image = "hello-app:latest"
+        image      = "localhost:5000/devops-hello:latest"
+        force_pull = true
       }
 
       resources {
-        cpu    = 200
+        cpu    = 100
         memory = 128
       }
     }
