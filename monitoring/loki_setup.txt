@@ -1,23 +1,86 @@
-Grafana Loki Setup
+Grafana Loki and Alloy Monitoring Setup
 
-1. Start Loki using Docker:
+1. Loki Setup
 
-docker run -d --name loki -p 3100:3100 grafana/loki:latest
+Grafana Loki was deployed as a Docker container and exposed on port 3100.
 
+Loki readiness was verified using:
 
-2. Check if Loki is running:
+curl -sS http://localhost:3100/ready
 
-curl http://localhost:3100/ready
+Expected result:
 
-
-3. View container logs:
-
-docker logs <container_name>
+ready
 
 
-4. View Nomad allocation logs:
+2. Grafana Alloy Setup
 
-nomad alloc logs <allocation_id>
+Grafana Alloy was configured to discover Docker containers and collect logs from the application deployed through HashiCorp Nomad.
+
+Alloy configuration file:
+
+monitoring/alloy-config.alloy
+
+The Alloy configuration:
+
+- Connects to Docker through /var/run/docker.sock
+- Discovers running Docker containers
+- Filters containers matching hello-*
+- Assigns job="nomad" and source="docker" labels
+- Collects the application container logs
+- Forwards the collected logs to Grafana Loki
 
 
-Loki logs can also be queried through its API or visualized using Grafana.l
+3. Nomad Application
+
+The Python application was deployed using HashiCorp Nomad with Docker as the container runtime.
+
+Nomad job:
+
+hello-devops
+
+The application successfully produced the following log:
+
+Hello, DevOps!
+
+
+4. Loki Log Verification
+
+The application logs were queried directly from Grafana Loki using:
+
+curl -G -sS "http://localhost:3100/loki/api/v1/query_range" \
+  --data-urlencode 'query={job="nomad"} |= "Hello, DevOps!"' \
+  --data-urlencode 'start=2026-08-12T23:15:00Z' \
+  --data-urlencode 'end=2026-08-12T23:25:00Z' \
+  --data-urlencode 'limit=10'
+
+The Loki API returned:
+
+status: success
+job: nomad
+source: docker
+log: Hello, DevOps!
+
+The successful response confirmed that Grafana Alloy collected the application logs from the Docker container and forwarded them to Grafana Loki.
+
+
+5. Monitoring Pipeline
+
+The completed monitoring workflow is:
+
+Python Application
+        |
+        v
+Docker / HashiCorp Nomad
+        |
+        v
+Grafana Alloy
+        |
+        v
+Grafana Loki
+
+Verification Result:
+
+Hello, DevOps!
+
+The monitoring pipeline was successfully configured and verified.
