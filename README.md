@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-This project demonstrates an end-to-end DevOps workflow for a Python application using **Linux/Ubuntu, Bash, Git/GitHub, Docker, GitHub Actions, HashiCorp Nomad, Grafana Alloy, and Grafana Loki**.
+This project demonstrates an end-to-end DevOps workflow for a Python application using **Linux/Ubuntu, Bash, Git/GitHub, Docker, GitHub Actions, HashiCorp Nomad, Grafana Alloy, Grafana Loki, and MLflow**.
 
-The project covers application development, containerization, continuous integration, workload orchestration, and centralized log monitoring.
+The project covers application development, containerization, continuous integration, workload orchestration, centralized log monitoring, and optional experiment tracking.
 
 ---
 
@@ -17,9 +17,12 @@ DevOpsInternFinal/
 │       └── ci.yml
 ├── evidence/
 │   ├── loki-verification.png
+│   ├── mlflow-experiment.png
 │   ├── nomad-allocation-status.png
 │   ├── nomad-application-logs.png
 │   └── nomad-job-status.png
+├── mlflow/
+│   └── dummy_experiment.py
 ├── monitoring/
 │   ├── alloy-config.alloy
 │   └── loki_setup.txt
@@ -37,20 +40,26 @@ DevOpsInternFinal/
 ## Architecture
 
 ```text
+Git/GitHub
+    ↓
+GitHub Actions
+    ↓
 Python Application
-        ↓
-      Docker
-        ↓
- Local Registry
-        ↓
+    ↓
+Docker
+    ↓
+Local Registry
+    ↓
 HashiCorp Nomad
-        ↓
- Grafana Alloy
-        ↓
- Grafana Loki
-        ↓
- Hello, DevOps!
+    ↓
+Grafana Alloy
+    ↓
+Grafana Loki
+    ↓
+Hello, DevOps!
 ```
+
+MLflow is implemented separately as an optional experiment-tracking component.
 
 ---
 
@@ -58,14 +67,14 @@ HashiCorp Nomad
 
 The project was developed using **Ubuntu on Windows Subsystem for Linux (WSL)**.
 
-System information script:
+Run the system information script:
 
 ```bash
 chmod +x scripts/sysinfo.sh
 ./scripts/sysinfo.sh
 ```
 
-Python syntax verification:
+Verify Python syntax:
 
 ```bash
 python3 -m py_compile hello.py
@@ -109,7 +118,7 @@ Application output:
 Hello, DevOps!
 ```
 
-The application remains active so it can run as a Nomad workload and generate container logs for monitoring.
+The application remains active so it can run as a Nomad-managed workload and generate container logs for monitoring.
 
 **Result:** ✅ Python application successfully created and validated.
 
@@ -117,7 +126,7 @@ The application remains active so it can run as a Nomad workload and generate co
 
 ## Task 4: Docker Containerization
 
-The application was containerized and made available through a local Docker registry.
+The Python application was containerized using Docker and made available through a local Docker registry.
 
 Build the image:
 
@@ -125,14 +134,14 @@ Build the image:
 docker build -t devops-hello:latest .
 ```
 
-Tag and push:
+Tag and push the image:
 
 ```bash
 docker tag devops-hello:latest localhost:5000/devops-hello:latest
 docker push localhost:5000/devops-hello:latest
 ```
 
-Verify:
+Verify Docker resources:
 
 ```bash
 docker images devops-hello
@@ -171,9 +180,9 @@ Syntax validation is used because the application is designed to remain running 
 
 ## Task 6: HashiCorp Nomad
 
-The Dockerized application was deployed as a long-running Nomad workload.
+The Dockerized application was deployed as a long-running Nomad service workload.
 
-Nomad job:
+Nomad job specification:
 
 ```text
 nomad/hello.nomad
@@ -198,7 +207,7 @@ Healthy   = 1
 Unhealthy = 0
 ```
 
-Allocation verification:
+Verify the allocation:
 
 ```bash
 nomad alloc status <allocation-id>
@@ -213,7 +222,7 @@ Deployment Health  = healthy
 Task "hello"        = running
 ```
 
-Application logs:
+Retrieve application logs:
 
 ```bash
 nomad alloc logs <allocation-id>
@@ -261,7 +270,7 @@ Check Loki readiness:
 curl -sS http://localhost:3100/ready
 ```
 
-Result:
+Successful response:
 
 ```text
 ready
@@ -269,14 +278,13 @@ ready
 
 ### Alloy Verification
 
-Grafana Alloy was configured to discover the `hello-*` Docker container, collect its logs, apply:
+Grafana Alloy was configured to:
 
-```text
-job="nomad"
-source="docker"
-```
-
-and forward the logs to Grafana Loki.
+- Discover Docker containers.
+- Select the Nomad-managed `hello-*` container.
+- Collect application logs.
+- Apply `job="nomad"` and `source="docker"` labels.
+- Forward collected logs to Grafana Loki.
 
 Validate the Alloy configuration:
 
@@ -287,11 +295,11 @@ docker run --rm \
   validate /etc/alloy/config.alloy
 ```
 
-The configuration validated successfully without errors.
+The configuration validated successfully.
 
 ### End-to-End Log Verification
 
-The application log was queried directly from Loki:
+Query the application log directly from Loki:
 
 ```bash
 curl -G -sS "http://localhost:3100/loki/api/v1/query_range" \
@@ -324,6 +332,51 @@ Python → Docker/Nomad → Grafana Alloy → Grafana Loki → Hello, DevOps!
 
 ---
 
+## Extra Credit: MLflow Tracking
+
+MLflow was deployed as an isolated Docker tracking server and used to record a dummy experiment without modifying the existing CI/CD pipeline.
+
+The experiment implementation is stored in:
+
+```text
+mlflow/dummy_experiment.py
+```
+
+Run the experiment:
+
+```bash
+python3 mlflow/dummy_experiment.py
+```
+
+Successful execution:
+
+```text
+MLflow experiment logged successfully.
+```
+
+The MLflow Tracking API confirmed the completed run:
+
+```text
+Run Name: wise-dog-975
+Status: FINISHED
+
+Metrics:
+accuracy = 0.95
+deployment_success = 1.0
+
+Parameters:
+environment = devops-assessment
+tool = mlflow
+```
+
+### MLflow Evidence
+
+![MLflow Experiment](evidence/mlflow-experiment.png)
+
+**Result:** 🟢 MLflow successfully recorded and retrieved the experiment, parameters, and metrics.
+
+---
+
 ## Final Verification
 
 | Component | Status |
@@ -340,17 +393,20 @@ Python → Docker/Nomad → Grafana Alloy → Grafana Loki → Hello, DevOps!
 | Grafana Loki | 🟢 Ready |
 | Alloy → Loki | 🟢 Verified |
 | Loki Log Query | 🟢 `Hello, DevOps!` |
+| MLflow Tracking | 🟢 Experiment Verified |
 
 ---
 
 ## Conclusion
 
-This assessment successfully demonstrates an end-to-end DevOps workflow covering **Linux, Bash, Git/GitHub, Python, Docker, GitHub Actions CI, HashiCorp Nomad orchestration, Grafana Alloy log collection, and Grafana Loki log aggregation**.
+This assessment successfully demonstrates an end-to-end DevOps workflow covering **Linux, Bash, Git/GitHub, Python, Docker, GitHub Actions CI, HashiCorp Nomad orchestration, Grafana Alloy log collection, Grafana Loki log aggregation, and MLflow experiment tracking**.
 
-The final verified pipeline is:
+The primary DevOps pipeline is:
 
 ```text
 Git/GitHub → GitHub Actions → Docker → Nomad → Grafana Alloy → Grafana Loki
 ```
 
 The successful Loki query returning **`Hello, DevOps!`** confirms that the application was deployed and its logs were successfully collected, forwarded, and queried through the monitoring pipeline.
+
+The optional MLflow implementation additionally demonstrates experiment tracking by successfully recording and retrieving a completed run with associated parameters and metrics.
